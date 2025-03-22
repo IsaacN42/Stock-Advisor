@@ -5,10 +5,20 @@ from alpaca_trade_api.rest import REST
 import pandas as pd
 import ta
 import mplfinance as mpf
+import os
+from dotenv import load_dotenv
+
+
+# ====== Fetch Keys ======
+load_dotenv(dotenv_path='C:\Users\ikene\Stock-Advisor\.gitignore\keys.env')
+
+APCA_API_KEY_ID = os.getenv("APCA_API_KEY_ID")
+APCA_API_SECRET_KEY = os.getenv("APCA_API_SECRET_KEY")
+NEWSAPI_KEY = os.getenv("NEWSAPI_KEY")
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+DISCORD_USER_ID = int(os.getenv("DISCORD_USER_ID"))
 
 # ======= Alpaca Setup =======
-APCA_API_KEY_ID = "AKSUSZTC5PKLOPWJBFMV"
-APCA_API_SECRET_KEY = "eD1nWPj81V4eVbfmqWh2iBHEMRpRJdPO4bclz3wa"
 ALPACA_BASE_URL = "https://api.alpaca.markets"
 
 alpaca = REST(
@@ -17,13 +27,7 @@ alpaca = REST(
     base_url=ALPACA_BASE_URL
 )
 
-# ======= NewsAPI Setup =======
-newsapi = NewsApiClient(api_key="f44aab4e002a486aa166613714fe8151")
-
 # ======= Discord Setup =======
-DISCORD_TOKEN = "MTM1Mjc2MTQxNjM3MjcxNTU5MA.GihUiC.7e2RaYBWv84fqr8wOXRsfQkytErZAB3x3SZugg"
-DISCORD_USER_ID = 477583926525820948  # Replace with your ID (int)
-
 intents = discord.Intents.default()
 intents.messages = True
 intents.message_content = True
