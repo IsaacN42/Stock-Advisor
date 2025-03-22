@@ -96,22 +96,31 @@ def plot_intraday_mplfinance(df, symbol):
 
     df.index.name = 'Date'
 
-    # Ensure charts folder exists
+    # Create charts folder
     charts_folder = os.path.join(os.path.dirname(__file__), 'charts')
     os.makedirs(charts_folder, exist_ok=True)
 
-    filename = os.path.join(charts_folder, f"{symbol}_mpl_chart.png")
+    # Format date for filename (yyyy-mm-dd)
+    date_str = df.index[0].strftime('%Y-%m-%d')
+
+    filename = os.path.join(charts_folder, f"{symbol}_mpl-chart_{date_str}.png")
 
     style = mpf.make_mpf_style(base_mpf_style='nightclouds', rc={'font.size': 8})
 
-    mpf.plot(df, type='candle', style=style,
-             title=f"{symbol} Intraday Chart ({df.index[0].date()})",
+    mpf.plot(df,
+             type='candle',
+             style=style,
+             title=f"{symbol} Intraday Chart ({date_str})",
              ylabel='Price (USD)',
              volume=True,
+             volume_panel=1,
+             panel_ratios=(4,1),
              savefig=filename)
 
     print(f"Saved chart as {filename}")
     return filename
+
+
 
 
 # ======= 5. TradingView Dynamic Link =======
