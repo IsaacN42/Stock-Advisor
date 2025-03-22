@@ -8,9 +8,8 @@ import mplfinance as mpf
 import os
 from dotenv import load_dotenv
 
-
 # ====== Fetch Keys ======
-load_dotenv(dotenv_path='C:\Users\ikene\Stock-Advisor\.gitignore\keys.env')
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../keys.env'))
 
 APCA_API_KEY_ID = os.getenv("APCA_API_KEY_ID")
 APCA_API_SECRET_KEY = os.getenv("APCA_API_SECRET_KEY")
@@ -20,12 +19,14 @@ DISCORD_USER_ID = int(os.getenv("DISCORD_USER_ID"))
 
 # ======= Alpaca Setup =======
 ALPACA_BASE_URL = "https://api.alpaca.markets"
-
 alpaca = REST(
     key_id=APCA_API_KEY_ID,
     secret_key=APCA_API_SECRET_KEY,
     base_url=ALPACA_BASE_URL
 )
+
+# ======= NewsAPI Setup =======
+newsapi = NewsApiClient(api_key=NEWSAPI_KEY)
 
 # ======= Discord Setup =======
 intents = discord.Intents.default()
