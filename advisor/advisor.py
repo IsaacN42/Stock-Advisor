@@ -84,7 +84,7 @@ def plot_intraday_mplfinance(df, symbol):
 
 # ======= 5. TradingView Dynamic Link =======
 def get_dynamic_tradingview_link(symbol):
-    return f"https://IsaacN42.github.io/tradingview-charts/?symbol=NASDAQ:{symbol}"
+    return f"https://IsaacN42.github.io/stock-advisor/widget/?symbol=NASDAQ:{symbol}"
 
 # ======= 6. Pattern Recognition Logic =======
 def pattern_recognition(news, stock_df):
