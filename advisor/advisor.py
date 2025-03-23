@@ -1,5 +1,3 @@
-# advisor.py
-
 import discord
 import asyncio
 from newsapi.newsapi_client import NewsApiClient
@@ -20,6 +18,9 @@ NEWSAPI_KEY = os.getenv("NEWSAPI_KEY")
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 DISCORD_USER_ID = int(os.getenv("DISCORD_USER_ID"))
 
+# ====== Watchlist ======
+WATCHLIST = ['BTCUSD']
+
 # ======= Alpaca Setup =======
 ALPACA_BASE_URL = "https://api.alpaca.markets"
 alpaca = REST(
@@ -38,31 +39,28 @@ intents.message_content = True
 client = discord.Client(intents=intents)
 
 # ======= 1. Fetch News =======
-def get_latest_news(query='Tesla'):
+def get_latest_news(query):
     try:
         articles = newsapi.get_everything(q=query, language='en', sort_by='publishedAt', page_size=5)
         headlines = [article['title'] for article in articles['articles']]
-        print(f"Fetched News: {headlines}")
+        print(f"Fetched News for {query}: {headlines}")
         return headlines
     except Exception as e:
         print(f"Error fetching news: {e}")
         return []
 
 # ======= 2. Fetch Stock Data =======
-def get_stock_data(symbol='TSLA'):
+def get_stock_data(symbol):
     try:
         today = datetime.utcnow()
-        weekday = today.weekday()  # 0=Mon, 4=Fri, 5=Sat, 6=Sun
+        weekday = today.weekday()
 
-        if weekday >= 5:
-            # Weekend → pull Friday's data
+        # Weekend logic (only for stocks, crypto trades 24/7)
+        if '/' not in symbol and weekday >= 5:
             days_to_subtract = weekday - 4
             target_date = today - timedelta(days=days_to_subtract)
-            print(f"Weekend detected. Pulling Friday's data: {target_date.date()}")
         else:
-            # Weekday → pull today's data
             target_date = today
-            print(f"Pulling today's data: {target_date.date()}")
 
         start_date = target_date.strftime('%Y-%m-%dT00:00:00Z')
         end_date = target_date.strftime('%Y-%m-%dT23:59:59Z')
@@ -76,17 +74,23 @@ def get_stock_data(symbol='TSLA'):
         ).df
 
         barset.index = pd.to_datetime(barset.index)
-        print(f"Fetched Stock Data for {symbol}")
+        print(f"Fetched Data for {symbol}")
         return barset
     except Exception as e:
-        print(f"Error fetching stock data: {e}")
+        print(f"Error fetching data: {e}")
         return pd.DataFrame()
 
 # ======= 3. Analyze Stock =======
 def analyze_stock(df):
     if not df.empty:
         df['rsi'] = ta.momentum.rsi(df['close'])
-        print(f"RSI Calculated: {df['rsi'].iloc[-1]:.2f}")
+        df['macd'] = ta.trend.macd_diff(df['close'])
+        df['ema_short'] = ta.trend.ema_indicator(df['close'], window=12)
+        df['ema_long'] = ta.trend.ema_indicator(df['close'], window=26)
+        bb = ta.volatility.BollingerBands(df['close'])
+        df['bb_upper'] = bb.bollinger_hband()
+        df['bb_lower'] = bb.bollinger_lband()
+        print(f"Indicators calculated: RSI={df['rsi'].iloc[-1]:.2f}, MACD={df['macd'].iloc[-1]:.2f}")
     return df
 
 # ======= 4. Plot Candlestick Chart =======
@@ -96,14 +100,11 @@ def plot_intraday_mplfinance(df, symbol):
 
     df.index.name = 'Date'
 
-    # Create charts folder
     charts_folder = os.path.join(os.path.dirname(__file__), 'charts')
     os.makedirs(charts_folder, exist_ok=True)
 
-    # Format date for filename (yyyy-mm-dd)
     date_str = df.index[0].strftime('%Y-%m-%d')
-
-    filename = os.path.join(charts_folder, f"{symbol}_mpl-chart_{date_str}.png")
+    filename = os.path.join(charts_folder, f"{symbol.replace('/', '')}_mpl-chart_{date_str}.png")
 
     style = mpf.make_mpf_style(base_mpf_style='nightclouds', rc={'font.size': 8})
 
@@ -120,60 +121,97 @@ def plot_intraday_mplfinance(df, symbol):
     print(f"Saved chart as {filename}")
     return filename
 
-
-
-
 # ======= 5. TradingView Dynamic Link =======
 def get_dynamic_tradingview_link(symbol):
-    return f"https://IsaacN42.github.io/stock-advisor/widget/?symbol=NASDAQ:{symbol}"
+    if '/' in symbol:
+        clean_symbol = symbol.replace('/', '')
+        return f"https://IsaacN42.github.io/stock-advisor/widget/?symbol=COINBASE:{clean_symbol}"
+    else:
+        return f"https://IsaacN42.github.io/stock-advisor/widget/?symbol=NASDAQ:{symbol}"
 
 # ======= 6. Pattern Recognition Logic =======
-def pattern_recognition(news, stock_df):
+def pattern_recognition(news, stock_df, symbol):
     try:
         if not stock_df.empty:
             latest_rsi = stock_df['rsi'].iloc[-1]
-            keywords = ['recall', 'lawsuit', 'downgrade', 'negative']
-            if any(any(k in n.lower() for k in keywords) for n in news) and latest_rsi > 70:
-                return f"🚨 Negative Alert: {symbol} RSI={latest_rsi:.2f}, might drop."
+            latest_macd = stock_df['macd'].iloc[-1]
+            ema_short = stock_df['ema_short'].iloc[-1]
+            ema_long = stock_df['ema_long'].iloc[-1]
+            close = stock_df['close'].iloc[-1]
+            bb_upper = stock_df['bb_upper'].iloc[-1]
+            bb_lower = stock_df['bb_lower'].iloc[-1]
+
+            keywords = ['recall', 'lawsuit', 'downgrade', 'negative', 'upgrade', 'invest']
+            alert_msgs = []
+
+            # RSI Overbought/Oversold
+            if latest_rsi > 70:
+                alert_msgs.append(f"⚠️ {symbol} RSI={latest_rsi:.2f} Overbought, possible drop.")
+            elif latest_rsi < 30:
+                alert_msgs.append(f"⚠️ {symbol} RSI={latest_rsi:.2f} Oversold, possible rise.")
+
+            # MACD Crossover
+            if stock_df['macd'].iloc[-2] < 0 and latest_macd > 0:
+                alert_msgs.append(f"📊 {symbol} MACD Bullish Crossover.")
+            elif stock_df['macd'].iloc[-2] > 0 and latest_macd < 0:
+                alert_msgs.append(f"📊 {symbol} MACD Bearish Crossover.")
+
+            # EMA Crossover
+            if ema_short > ema_long and stock_df['ema_short'].iloc[-2] <= stock_df['ema_long'].iloc[-2]:
+                alert_msgs.append(f"📈 {symbol} EMA Bullish Crossover.")
+            elif ema_short < ema_long and stock_df['ema_short'].iloc[-2] >= stock_df['ema_long'].iloc[-2]:
+                alert_msgs.append(f"📉 {symbol} EMA Bearish Crossover.")
+
+            # Bollinger Band Breaches
+            if close > bb_upper:
+                alert_msgs.append(f"🚀 {symbol} closing above Bollinger Upper Band.")
+            elif close < bb_lower:
+                alert_msgs.append(f"🔻 {symbol} closing below Bollinger Lower Band.")
+
+            # News Keywords
+            for n in news:
+                if any(k in n.lower() for k in keywords):
+                    alert_msgs.append(f"📰 News Trigger: \"{n}\"")
+
+            if alert_msgs:
+                return "\n".join(alert_msgs)
     except Exception as e:
         print(f"Pattern recognition error: {e}")
     return None
 
 # ======= 7. Advisor Core Function =======
 async def run_advisor():
-    print("Running Advisor Check...")
-    symbol = 'TSLA'
-    news = get_latest_news(symbol)
-    stock_df = get_stock_data(symbol)
-    stock_df = analyze_stock(stock_df)
-    signal = pattern_recognition(news, stock_df)
-
-    # Generate chart
-    chart_file = plot_intraday_mplfinance(stock_df, symbol)
-    tradingview_link = get_dynamic_tradingview_link(symbol)
-
     user = await client.fetch_user(DISCORD_USER_ID)
+    timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
 
-    if signal:
-        await user.send(f"{signal}\nView {symbol} Interactive Chart: {tradingview_link}")
-    else:
-        await user.send(f"✅ Advisor Bot: No significant {symbol} pattern detected currently.\nView Chart: {tradingview_link}")
+    for symbol in WATCHLIST:
+        print(f"Running Advisor Check for {symbol}...")
+        news = get_latest_news(symbol)
+        stock_df = get_stock_data(symbol)
+        stock_df = analyze_stock(stock_df)
+        signal = pattern_recognition(news, stock_df, symbol)
 
-    # Send chart image
-    if chart_file:
-        with open(chart_file, 'rb') as f:
-            await user.send(file=discord.File(f))
+        tradingview_link = get_dynamic_tradingview_link(symbol)
+        chart_file = plot_intraday_mplfinance(stock_df, symbol)
 
-    print("Notification and chart sent.")
+        if signal:
+            await user.send(f"{timestamp}\n{signal}\nChart: {tradingview_link}")
+        else:
+            await user.send(f"{timestamp}\n✅ No significant {symbol} pattern detected. Chart: {tradingview_link}")
+
+        if chart_file:
+            with open(chart_file, 'rb') as f:
+                await user.send(file=discord.File(f))
+        print(f"Notification sent for {symbol}.")
 
 # ======= 8. Discord Bot Events =======
 @client.event
 async def on_ready():
     print(f'Logged in as {client.user}')
 
-    # Single run
-    await run_advisor()
-    await client.close()
+    while True:
+        await run_advisor()
+        await asyncio.sleep(900)  # Every 15 mins
 
 # ======= 9. Run Bot =======
 client.run(DISCORD_TOKEN)
