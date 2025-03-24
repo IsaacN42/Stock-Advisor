@@ -124,10 +124,13 @@ def plot_intraday_mplfinance(df, symbol):
 # ======= 5. TradingView Dynamic Link =======
 def get_dynamic_tradingview_link(symbol):
     if '/' in symbol:
+        # For crypto (assuming you're using USD pairs like BTC/USD)
         clean_symbol = symbol.replace('/', '')
-        return f"https://IsaacN42.github.io/stock-advisor/widget/?symbol=COINBASE:{clean_symbol}"
+        return f"https://www.tradingview.com/symbols/{clean_symbol.upper()}USD/"
     else:
-        return f"https://IsaacN42.github.io/stock-advisor/widget/?symbol=NASDAQ:{symbol}"
+        # For stocks
+        return f"https://www.tradingview.com/symbols/{symbol.upper()}/"
+
 
 # ======= 6. Pattern Recognition Logic =======
 def pattern_recognition(news, stock_df, symbol):
