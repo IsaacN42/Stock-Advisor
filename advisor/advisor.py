@@ -19,7 +19,7 @@ DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 DISCORD_USER_ID = int(os.getenv("DISCORD_USER_ID"))
 
 # ====== Watchlist ======
-WATCHLIST = ['BTCUSD']
+WATCHLIST = ['BTCUSD', 'TSLA']
 
 # ======= Alpaca Setup =======
 ALPACA_BASE_URL = "https://api.alpaca.markets"
@@ -199,12 +199,10 @@ async def run_advisor():
 
         if signal:
             await user.send(f"{timestamp}\n{signal}\nChart: {tradingview_link}")
-        else:
-            await user.send(f"{timestamp}\n✅ No significant {symbol} pattern detected. Chart: {tradingview_link}")
-
-        if chart_file:
-            with open(chart_file, 'rb') as f:
-                await user.send(file=discord.File(f))
+            
+            if chart_file:
+                with open(chart_file, 'rb') as f:
+                    await user.send(file=discord.File(f))
         print(f"Notification sent for {symbol}.")
 
 # ======= 8. Discord Bot Events =======
