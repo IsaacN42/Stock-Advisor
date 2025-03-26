@@ -1,10 +1,10 @@
 import pandas as pd
 from prediction_engine.data_ingestion.news import get_scored_news
-from prediction_engine.data_ingestion.price import get_price_data
+from prediction_engine.data_ingestion.price import fetch_price_data
 
 def combine_features(symbol):
     # Get price data
-    price_df = get_price_data(symbol)
+    price_df = fetch_price_data(symbol)
     if price_df.empty:
         return None
 
