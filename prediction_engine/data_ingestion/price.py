@@ -27,8 +27,10 @@ def fetch_price_data(symbol: str, days_back=3, interval='15Min'):
             timeframe=interval,
             start=start.isoformat() + 'Z',
             end=end.isoformat() + 'Z',
-            limit=1000
+            limit=1000,
+            feed='iex'
         ).df
+
 
         if bars.empty:
             print(f"No data found for {symbol}.")
