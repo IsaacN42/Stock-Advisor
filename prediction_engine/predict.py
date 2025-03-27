@@ -22,3 +22,5 @@ def run_prediction(symbol="TSLA"):
 
 if __name__ == "__main__":
     print(run_prediction("TSLA"))
+
+# python -m prediction_engine.predict #

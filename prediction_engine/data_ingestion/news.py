@@ -1,4 +1,4 @@
-from newsapi import NewsApiClient
+from newsapi.newsapi_client import NewsApiClient
 import os
 from dotenv import load_dotenv
 from prediction_engine.features.sentiment import FinBERTSentimentAnalyzer

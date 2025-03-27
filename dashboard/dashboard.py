@@ -1,17 +1,16 @@
 import streamlit as st
 import json
-import requests
+import os
 
 CONFIG_FILE = "config.json"
 
-# Load config
-try:
-    config_url = "https://raw.githubusercontent.com/YOUR_USERNAME/advisor-dashboard/main/config.json"
-    response = requests.get(config_url)
-    config = response.json()
-except:
-    # Local fallback or first run
-    config = {'watchlist': ['TSLA'], 'keywords': ['recall', 'lawsuit'], 'rsi_threshold': 70}
+# Load config from local file
+if os.path.exists(CONFIG_FILE):
+    with open(CONFIG_FILE, "r") as f:
+        config = json.load(f)
+else:
+    st.error("⚠️ config.json not found. Please make sure it exists.")
+    st.stop()
 
 st.title("📈 Advisor Bot Control Panel")
 
@@ -51,7 +50,7 @@ if st.button("Remove Keyword"):
 if st.button("Save Settings"):
     with open(CONFIG_FILE, 'w') as f:
         json.dump(config, f, indent=4)
-    st.success("Settings saved locally! Push to GitHub to update the bot.")
+    st.success("Settings saved! You may need to restart the advisor to apply changes.")
 
 # Display config
 st.subheader("Current Config")
