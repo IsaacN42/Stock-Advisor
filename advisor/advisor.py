@@ -9,6 +9,7 @@ import os
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from prediction_engine.predict import run_prediction
+import json
 
 # ====== Fetch Keys ======
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../.env'))
@@ -20,7 +21,11 @@ DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 DISCORD_USER_ID = int(os.getenv("DISCORD_USER_ID"))
 
 # ====== Watchlist ======
-WATCHLIST = ['BTCUSD', 'TSLA']
+# Load watchlist from config.json
+with open(os.path.join(os.path.dirname(__file__), '../config.json')) as f:
+    config = json.load(f)
+
+WATCHLIST = config.get("watchlist", [])
 
 # ======= Alpaca Setup =======
 ALPACA_BASE_URL = "https://api.alpaca.markets"
