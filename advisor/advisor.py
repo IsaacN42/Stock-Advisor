@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from prediction_engine.predict import run_prediction
 
 # ====== Fetch Keys ======
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../keys.env'))
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../.env'))
 
 APCA_API_KEY_ID = os.getenv("APCA_API_KEY_ID")
 APCA_API_SECRET_KEY = os.getenv("APCA_API_SECRET_KEY")
