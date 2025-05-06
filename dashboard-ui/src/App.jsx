@@ -1,17 +1,43 @@
-import React from 'react';
-import PredictionCard from './components/prediction_card';
+import React, { useEffect, useState } from 'react';
+import SymbolCard from "./components/symbol_card";
 
 function App() {
-  const symbols = ['TSLA', 'AAPL', 'NVDA', 'BTCUSD'];
+  const [watchlist, setWatchlist] = useState([]);
+  const [predictions, setPredictions] = useState({});
+
+  useEffect(() => {
+    const fetchConfigAndPredictions = async () => {
+      try {
+        // Load config.json via backend
+        const configRes = await fetch("http://127.0.0.1:8000/config");
+        const configData = await configRes.json();
+        const symbols = configData.watchlist || [];
+        setWatchlist(symbols);
+
+        // Load prediction per symbol
+        symbols.forEach(async (symbol) => {
+          try {
+            const res = await fetch(`http://127.0.0.1:8000/predict/${symbol}`);
+            const data = await res.json();
+            setPredictions(prev => ({ ...prev, [symbol]: data.prediction }));
+          } catch (err) {
+            console.error(`Failed to fetch prediction for ${symbol}`, err);
+          }
+        });
+      } catch (error) {
+        console.error("Failed to load config:", error);
+      }
+    };
+
+    fetchConfigAndPredictions();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-zinc-900 p-8 text-white">
-      <h1 className="text-3xl font-bold mb-6">Live Predictions Dashboard</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {symbols.map((symbol) => (
-          <PredictionCard key={symbol} symbol={symbol} />
-        ))}
-      </div>
+    <div className="min-h-screen bg-black text-white p-6 space-y-6">
+      <h1 className="text-4xl font-bold mb-4">📈 AI Trading Dashboard</h1>
+      {watchlist.map(symbol => (
+        <SymbolCard key={symbol} symbol={symbol} prediction={predictions[symbol]} />
+      ))}
     </div>
   );
 }

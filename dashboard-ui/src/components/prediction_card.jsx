@@ -28,19 +28,12 @@ export default function PredictionCard({ symbol }) {
     return (
       <div className="space-y-2">
         {lines.map((line, idx) => {
-          // Headlines
-          if (line.startsWith('[')) {
-            return <p key={idx} className="text-sm text-zinc-400">{line}</p>;
-          }
-
-          // Bold key info
-          if (line.startsWith('[')) {
-            return <p key={idx} className="font-medium">{line}</p>;
-          }
-
-          // Labeling
           if (line.startsWith("Prediction:") || line.startsWith("Reason:")) {
             return <p key={idx}><strong>{line}</strong></p>;
+          }
+
+          if (line.startsWith("[")) {
+            return <p key={idx} className="text-sm text-zinc-400">{line}</p>;
           }
 
           return <p key={idx}>{line}</p>;
